@@ -11,7 +11,6 @@ const Chat = () => {
     const [newMessage, setNewMessage] = useState("");
     const [newUsername, setNewUsername] = useState("");
 
-    const messageLog = "/snd/log";
     const messageSend = "/snd/sendMessage";
     const messageReceive = "/rcv/messages";
     const registration = "/snd/register";
@@ -21,6 +20,10 @@ const Chat = () => {
     const nameGet = "/user/rcv/namingResponse";
 
     useEffect(() => {
+        if ("Notification" in window) {
+            Notification.requestPermission().then(r => console.log(r));
+        }
+
         const socket = new SockJS('http://localhost:8080/chatApp');
         socket.onopen = () => {
             console.log("Socket Open.");
@@ -48,7 +51,16 @@ const Chat = () => {
                 setConnected(true);
 
                 stompClient.subscribe(messageReceive, message => {
-                    setMessages(prevMessages => [JSON.parse(message.body), ...prevMessages]);
+                    const newMsg = JSON.parse(message.body);
+                    setMessages(prevMessages => [newMsg, ...prevMessages]);
+
+                    if (newMsg.text.includes(`@${username}`) && document.visibilityState === "hidden") {
+                        if (Notification.permission === "granted") {
+                            new Notification(`You were mentioned by ${newMsg.username}`, {
+                                body: newMsg.text
+                            });
+                        }
+                    }
                 });
 
                 stompClient.subscribe(ping, () => {
@@ -66,7 +78,7 @@ const Chat = () => {
                         setUsernameSet(true);
                         console.log("Username set to: " + response.name);
                     } else {
-                        console.log("Username already taken");
+                        alert("Username already taken!");
                     }
                 });
 
@@ -106,7 +118,7 @@ const Chat = () => {
         return () => {
             stompClient.deactivate().then(r => console.log(r));
         };
-    }, []);
+    }, [username]);
 
     const sendMessage = () => {
         if (connected && newMessage) {
@@ -149,6 +161,7 @@ const Chat = () => {
                     <div>Set Username</div>
                     <input
                         type="text"
+                        placeholder="Enter username..."
                         value={newUsername}
                         onChange={(e) => setNewUsername(e.target.value)}
                         onKeyUp={(e) => {
@@ -163,6 +176,7 @@ const Chat = () => {
                 <>
                     <input
                         type="text"
+                        placeholder="Type a message..."
                         value={newMessage}
                         onChange={(e) => setNewMessage(e.target.value)}
                         onKeyUp={(e) => {
@@ -172,16 +186,22 @@ const Chat = () => {
                         }}
                     />
                     <button onClick={sendMessage} disabled={!connected}>Send</button>
-                    <div>
-                        {messages.map((msg, idx) => (
-                            <div key={idx}>
-                                {msg.username} ({new Date(msg.timestamp).toLocaleTimeString()}): {msg.text}
-                            </div>
-                        ))}
+                    <div className="message-container">
+                        {messages.map((msg, idx) => {
+                            const isMentioned = msg.text.includes(`@${username}`);
+                            const messageClass = `message ${isMentioned ? 'message-mentioned' : ''}`;
+
+                            return (
+                                <div key={idx} className={messageClass}>
+                                    {msg.username} ({new Date(msg.timestamp).toLocaleTimeString()}): {msg.text}
+                                </div>
+                            );
+                        })}
                     </div>
                 </>
             )}
         </div>
+
     );
 
 };
