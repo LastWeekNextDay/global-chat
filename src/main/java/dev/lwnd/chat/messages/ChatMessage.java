@@ -1,4 +1,4 @@
-package dev.lwnd.chat;
+package dev.lwnd.chat.messages;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -7,22 +7,17 @@ import java.util.Date;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ChatMessage {
-    User source;
+    String username;
     String text;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSZ")
     Date timestamp;
 
-    public ChatMessage(User source, String text, Date timestamp) {
-        this.source = source;
+    public ChatMessage(String text, Date timestamp) {
         this.text = text;
         this.timestamp = timestamp;
     }
 
     public ChatMessage() {
-    }
-
-    public User getSource() {
-        return source;
     }
 
     public String getText() {
@@ -33,8 +28,12 @@ public class ChatMessage {
         return timestamp;
     }
 
-    public void setSource(User source) {
-        this.source = source;
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
     }
 
     public void setText(String text) {

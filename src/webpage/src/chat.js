@@ -7,21 +7,20 @@ const Chat = () => {
     const [connected, setConnected] = useState(false);
     const [messages, setMessages] = useState([]);
     const [username, setUsername] = useState('');
-    const [clientBrowser, setClientBrowser] = useState("");
+    const [usernameSet, setUsernameSet] = useState(false);
     const [newMessage, setNewMessage] = useState("");
-    const [messageLog] = useState("/chat/log");
-    const[messageSend] = useState("/chat/sendMessage");
-    const[messageReceive] = useState("/messages");
+    const [newUsername, setNewUsername] = useState("");
+
+    const messageLog = "/snd/log";
+    const messageSend = "/snd/sendMessage";
+    const messageReceive = "/rcv/messages";
+    const registration = "/snd/register";
+    const ping = "/user/rcv/ping";
+    const pong = "/snd/pong";
+    const nameSet = "/snd/naming";
+    const nameGet = "/user/rcv/namingResponse";
 
     useEffect(() => {
-        let enteredUsername = prompt("Please enter your username:", "Guest");
-        if (!enteredUsername || enteredUsername.trim() === '') {
-            enteredUsername = 'Guest'; // Default username if none entered
-        }
-        setUsername(enteredUsername);
-        let clientBr = navigator.userAgent;
-        setClientBrowser(clientBr);
-
         const socket = new SockJS('http://localhost:8080/chatApp');
         socket.onopen = () => {
             console.log("Socket Open.");
@@ -41,53 +40,63 @@ const Chat = () => {
             console.log(event);
         }
 
-        // Connect to the WebSocket server
         const stompClient = new Client({
             webSocketFactory: () => socket,
             onConnect: () => {
                 console.log("Connected!");
-                let log = {
-                    message: enteredUsername + " (" + clientBr + ") connected.",
-                    timestamp: Date.now(),
-                }
-                stompClient.publish({
-                    destination: messageLog,
-                    body: JSON.stringify(log),
-                    skipContentLengthHeader: true
-                })
+
                 setConnected(true);
+
                 stompClient.subscribe(messageReceive, message => {
-                    setMessages(prevMessages => [...prevMessages, JSON.parse(message.body)]);
+                    setMessages(prevMessages => [JSON.parse(message.body), ...prevMessages]);
+                });
+
+                stompClient.subscribe(ping, () => {
+                    console.log("Ping received");
+                    console.log("Sending pong");
+                    stompClient.publish({
+                        destination: pong
+                    });
+                });
+
+                stompClient.subscribe(nameGet, message => {
+                    let response = JSON.parse(message.body);
+                    if (response.response === "1"){
+                        setUsername(response.name);
+                        setUsernameSet(true);
+                        console.log("Username set to: " + response.name);
+                    } else {
+                        console.log("Username already taken");
+                    }
+                });
+
+                stompClient.publish({
+                    destination: registration
                 });
             },
             onWebSocketClose: () => {
                 console.log("Web Socket Close.");
+
                 setConnected(false);
             },
             onDisconnect: () => {
                 console.log("Disconnected!");
-                let log = {
-                    message: enteredUsername + " (" + clientBr + ") disconnected.",
-                    timestamp: Date.now(),
-                }
-                stompClient.publish({
-                    destination: messageLog,
-                    body: JSON.stringify(log),
-                    skipContentLengthHeader: true
-                })
+
                 setConnected(false);
             },
             onStompError: (frame) => {
                 console.log("STOMP ERROR");
                 console.error(frame);
+
                 setConnected(false);
             },
             onWebSocketError: (event) => {
                 console.log("Web Socket Error");
                 console.error(event);
+
                 setConnected(false);
             },
-            reconnectDelay: 1000,
+            reconnectDelay: 2500,
         });
 
         stompClient.activate();
@@ -99,19 +108,15 @@ const Chat = () => {
         };
     }, []);
 
-    // Handler for sending messages
     const sendMessage = () => {
         if (connected && newMessage) {
-            let user = {
-                username: username,
-                client: clientBrowser,
-            }
             let message = {
-                source: user,
                 text: newMessage,
                 timestamp: Date.now(),
             };
+
             console.log("Sending message:", message);
+
             client.publish({
                 destination: messageSend,
                 body: JSON.stringify(message),
@@ -121,26 +126,64 @@ const Chat = () => {
         }
     };
 
+    const assignUsername = () => {
+        if (connected && newUsername) {
+            let request = {
+                name: newUsername
+            }
+
+            console.log("Sending username:", request);
+
+            client.publish({
+                destination: nameSet,
+                body: JSON.stringify(request),
+            });
+            setNewUsername("");
+        }
+    }
+
     return (
         <div>
-            <div>
-                {messages.map((msg, idx) => (
-                    <div key={idx}>{msg.text}</div>
-                ))}
-            </div>
-            <input
-                type="text"
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                onKeyUp={(e) => {
-                    if (e.key === "Enter") {
-                        sendMessage();
-                    }
-                }}
-            />
-            <button onClick={sendMessage} disabled={!connected}>Send</button> {/* Disable button when not connected */}
+            {!usernameSet ? (
+                <>
+                    <div>Set Username</div>
+                    <input
+                        type="text"
+                        value={newUsername}
+                        onChange={(e) => setNewUsername(e.target.value)}
+                        onKeyUp={(e) => {
+                            if (e.key === "Enter") {
+                                assignUsername();
+                            }
+                        }}
+                    />
+                    <button onClick={assignUsername} disabled={!connected}>Set</button>
+                </>
+            ) : (
+                <>
+                    <input
+                        type="text"
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        onKeyUp={(e) => {
+                            if (e.key === "Enter") {
+                                sendMessage();
+                            }
+                        }}
+                    />
+                    <button onClick={sendMessage} disabled={!connected}>Send</button>
+                    <div>
+                        {messages.map((msg, idx) => (
+                            <div key={idx}>
+                                {msg.username} ({new Date(msg.timestamp).toLocaleTimeString()}): {msg.text}
+                            </div>
+                        ))}
+                    </div>
+                </>
+            )}
         </div>
     );
+
 };
 
 export default Chat;

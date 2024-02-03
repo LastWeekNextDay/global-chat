@@ -1,4 +1,4 @@
-package dev.lwnd.chat;
+package dev.lwnd.chat.messages;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
