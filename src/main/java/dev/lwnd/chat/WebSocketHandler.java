@@ -52,7 +52,7 @@ public class WebSocketHandler {
 
         while (true) {
             try {
-                Thread.sleep(20000); // Send ping every 20 seconds
+                Thread.sleep(5000); // Send ping every 5 seconds
             } catch (InterruptedException e) {
                 LogManager.log("Ping loop interrupted");
                 return;

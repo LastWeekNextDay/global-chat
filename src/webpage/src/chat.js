@@ -108,7 +108,7 @@ const Chat = () => {
 
                 setConnected(false);
             },
-            reconnectDelay: 2500,
+            reconnectDelay: 1000,
         });
 
         stompClient.activate();
@@ -118,7 +118,7 @@ const Chat = () => {
         return () => {
             stompClient.deactivate().then(r => console.log(r));
         };
-    }, [username]);
+    }, []);
 
     const sendMessage = () => {
         if (connected && newMessage) {
@@ -129,12 +129,12 @@ const Chat = () => {
 
             console.log("Sending message:", message);
 
+            setNewMessage("");
             client.publish({
                 destination: messageSend,
                 body: JSON.stringify(message),
                 skipContentLengthHeader: true
             });
-            setNewMessage("");
         }
     };
 
@@ -146,11 +146,11 @@ const Chat = () => {
 
             console.log("Sending username:", request);
 
+            setNewUsername("");
             client.publish({
                 destination: nameSet,
                 body: JSON.stringify(request),
             });
-            setNewUsername("");
         }
     }
 
@@ -201,9 +201,7 @@ const Chat = () => {
                 </>
             )}
         </div>
-
     );
-
 };
 
 export default Chat;
