@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Log Central</title>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const logsContainer = document.getElementById('logs');
+
+            async function fetchLogs() {
+                const response = await fetch('/logs');
+                const logs = await response.json();
+                logsContainer.innerHTML = logs.map(log => `<p>${log.message}</p>`).join('');
+            }
+
+            setInterval(fetchLogs, 2000);
+            fetchLogs();
+        });
+    </script>
+</head>
+<body>
+<h1>Log Central</h1>
+<div id="logs"></div>
+</body>
+</html>

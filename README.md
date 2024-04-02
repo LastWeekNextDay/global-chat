@@ -15,3 +15,13 @@ run using "mvn spring-boot:run"
 cd to src/webpage
 
 run using "npm start"
+
+access the website at localhost:3000
+
+## webhook
+
+cd to src/webhook
+
+run using "npm server.js"
+
+access the webhook at localhost:3001

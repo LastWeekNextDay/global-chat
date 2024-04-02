@@ -1,6 +1,7 @@
 package dev.lwnd.chat;
 
 import dev.lwnd.chat.messages.ChatMessage;
+import dev.lwnd.chat.messages.Log;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -14,6 +15,8 @@ import java.security.Principal;
 public class ChatMessageHandler {
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
+    private WebhookSender webhookSender = new WebhookSender("http://localhost:3001/webhook");
+
     @MessageMapping("/sendMessage")
     public void sendMessage(Principal principal, @Payload @NotNull ChatMessage message) {
         StringBuilder messageText = new StringBuilder("Received message: \n");
@@ -25,8 +28,9 @@ public class ChatMessageHandler {
             messageText.append("    ").append(line).append("\n");
         }
         LogManager.log(messageText.toString());
-
         message.setUsername(ChatInfo.getUserName(principal.getName()));
+
         messagingTemplate.convertAndSend("/rcv/messages", message);
+        webhookSender.sendWebhook(new Log(ChatInfo.getUserName(principal.getName()) + " sent a message [ " + message.getTimestamp() +" ]:"  + message.getText()));
     }
 }
