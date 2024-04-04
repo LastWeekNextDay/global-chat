@@ -22,6 +22,6 @@ access the website at localhost:3000
 
 cd to src/webhook
 
-run using "npm server.js"
+run using "node server.js"
 
 access the webhook at localhost:3001
