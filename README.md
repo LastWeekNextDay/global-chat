@@ -18,6 +18,8 @@ cd to src/webpage
 
 run using "npm start"
 
+if react-scripts error, type "npm install" then run again
+
 access the website at localhost:3000
 
 ## webhook
